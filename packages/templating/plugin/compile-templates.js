@@ -6,7 +6,7 @@ const CACHE_DEBUG = !! process.env.METEOR_TEST_PRINT_TEMPLATING_CACHE_DEBUG;
 
 class TemplateCompiler {
   constructor () {
-    // Maps from a source hash to the return value of htmlScanner.scan (a {js,
+    // Maps from a source hash to the return value of HtmlScanner.scan (a {js,
     // head, body} object.
     this._cache = new LRU({
       max: CACHE_SIZE,
@@ -23,7 +23,7 @@ class TemplateCompiler {
     const bodyAttrsOrigin = {};
 
     files.forEach((file) => {
-      const scanned = this._doHTMLScanning(file, html_scanner);
+      const scanned = this._doHTMLScanning(file);
 
       // failed to parse?
       if (! scanned)
@@ -51,7 +51,7 @@ class TemplateCompiler {
     });
   }
 
-  _doHTMLScanning(inputFile, htmlScanner) {
+  _doHTMLScanning(inputFile) {
     const cacheKey = inputFile.getSourceHash();
     let results = this._cache.get(cacheKey);
 
@@ -60,10 +60,10 @@ class TemplateCompiler {
       try {
         // Note: the path is only used for errors, so it doesn't have to be part
         // of the cache key.
-        results = htmlScanner.scan(contents, inputFile.getPathInPackage());
+        results = HtmlScanner.scan(contents, inputFile.getPathInPackage());
       } catch (e) {
-        if ((e instanceof htmlScanner.ParseError) ||
-            (e instanceof htmlScanner.BodyAttrsError)) {
+        if ((e instanceof HtmlScanner.ParseError) ||
+            (e instanceof HtmlScanner.BodyAttrsError)) {
           inputFile.error({
             message: e.message,
             line: e.line
