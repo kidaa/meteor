@@ -18,7 +18,8 @@ Package.registerBuildPlugin({
   // weak dependency.
   use: [
     'minifiers',
-    'spacebars-compiler'
+    'spacebars-compiler',
+    'ecmascript'
   ],
   sources: [
     'plugin/html_scanner.js',
