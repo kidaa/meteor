@@ -1,8 +1,8 @@
-var path = Npm.require('path');
-var LRU = Npm.require('lru-cache');
+const path = Npm.require('path');
+const LRU = Npm.require('lru-cache');
 
-var CACHE_SIZE = process.env.METEOR_TEMPLATING_CACHE_SIZE || 1024*1024*10;
-var CACHE_DEBUG = !! process.env.METEOR_TEST_PRINT_TEMPLATING_CACHE_DEBUG;
+const CACHE_SIZE = process.env.METEOR_TEMPLATING_CACHE_SIZE || 1024*1024*10;
+const CACHE_DEBUG = !! process.env.METEOR_TEST_PRINT_TEMPLATING_CACHE_DEBUG;
 
 class TemplateCompiler {
   constructor () {
@@ -11,10 +11,7 @@ class TemplateCompiler {
     this._cache = new LRU({
       max: CACHE_SIZE,
       // Cache is measured in bytes.
-      length: function (value) {
-        function lengthOrZero (field) {
-          return field ? field.length : 0;
-        }
+      length: (value) => {
         return lengthOrZero(value.head) + lengthOrZero(value.body) +
           lengthOrZero(value.js);
       }
@@ -22,34 +19,29 @@ class TemplateCompiler {
   }
 
   processFilesForTarget(files) {
-    var bodyAttrs = {};
-    var bodyAttrsOrigin = {};
+    const bodyAttrs = {};
+    const bodyAttrsOrigin = {};
 
     files.forEach((file) => {
-      var scanned = this.doHTMLScanning(file, html_scanner);
+      const scanned = this._doHTMLScanning(file, html_scanner);
 
       // failed to parse?
       if (! scanned)
         return;
 
       Object.keys(scanned.bodyAttrs).forEach((attr) => {
-        var val = scanned.bodyAttrs[attr];
+        const val = scanned.bodyAttrs[attr];
         if (bodyAttrs.hasOwnProperty(attr) && bodyAttrs[attr] !== val) {
           // two conflicting attributes on <body> tags in two different template
           // files
-          var conflictingFilesStr = [bodyAttrsOrigin[attr], file].map((f) => {
+          const conflictingFilesStr = [bodyAttrsOrigin[attr], file].map((f) => {
             return f.getPathInPackage();
           }).join(', ');
 
           file.error({
-            message: [
-              "<body> declarations have conflicting values for the '",
-              attr,
-              "' attribute in the following files: ",
-              conflictingFilesStr,
-              "."
-            ].join('')
+            message: `<body> declarations have conflicting values for the '${attr}' attribute in the following files: ${conflictingFilesStr}.`
           });
+
           return;
         }
 
@@ -59,12 +51,12 @@ class TemplateCompiler {
     });
   }
 
-  doHTMLScanning(inputFile, htmlScanner) {
-    var cacheKey = inputFile.getSourceHash();
-    var results = this._cache.get(cacheKey);
+  _doHTMLScanning(inputFile, htmlScanner) {
+    const cacheKey = inputFile.getSourceHash();
+    let results = this._cache.get(cacheKey);
 
     if (! results) {
-      var contents = inputFile.getContentsAsString();
+      const contents = inputFile.getContentsAsString();
       try {
         // Note: the path is only used for errors, so it doesn't have to be part
         // of the cache key.
@@ -91,19 +83,19 @@ class TemplateCompiler {
       inputFile.addHtml({ section: "body", data: results.body });
 
     if (results.js) {
-      var filePath = inputFile.getPathInPackage();
-      var pathPart = path.dirname(filePath);
+      const filePath = inputFile.getPathInPackage();
+      let pathPart = path.dirname(filePath);
       if (pathPart === '.')
         pathPart = '';
       if (pathPart.length && pathPart !== path.sep)
         pathPart = pathPart + path.sep;
-      var ext = path.extname(filePath);
-      var basename = path.basename(filePath, ext);
+      const ext = path.extname(filePath);
+      const basename = path.basename(filePath, ext);
 
       // XXX generate a source map
 
       inputFile.addJavaScript({
-        path: path.join(pathPart, "template." + basename + ".js"),
+        path: path.join(pathPart, `template.${basename}.js`),
         data: results.js
       });
     }
@@ -118,7 +110,14 @@ Plugin.registerCompiler({
   extensions: ['html'],
   archMatching: 'web',
   isTemplate: true
-}, function () {
-    return new TemplateCompiler();
-});
+}, () => new TemplateCompiler());
 
+/**
+ * Helper function used in the cache
+ * @param  {Object} [field] An object with a length property
+ * @return {Number} If `field` not passed, 0; otherwise the `length` property
+ * of `field`.
+ */
+function lengthOrZero (field) {
+  return field ? field.length : 0;
+}
