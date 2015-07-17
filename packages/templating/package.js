@@ -17,17 +17,12 @@ Package.registerBuildPlugin({
   // XXX maybe uglify should be applied by this plugin instead of via magic
   // weak dependency.
   use: [
-    'minifiers',
-    'spacebars-compiler',
     'ecmascript',
-    'html-scanner'
+    'caching-html-compiler'
   ],
   sources: [
     'plugin/compile-templates.js'
-  ],
-  npmDependencies: {
-    "lru-cache": "2.6.4"
-  }
+  ]
 });
 
 // This onUse describes the *runtime* implications of using this package.
