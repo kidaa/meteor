@@ -1,16 +1,20 @@
 Package.describe({
   summary: "Common code for OAuth-based services",
-  version: "1.1.4"
+  version: "1.1.5-plugins.1"
 });
 
 Package.onUse(function (api) {
+  api.use('check');
+  api.use('underscore');
+
   api.use('routepolicy', 'server');
   api.use('webapp', 'server');
   api.use('mongo', 'server');
+
   api.use('reload', 'client');
   api.use('base64', 'client');
 
-  api.use(['underscore', 'service-configuration', 'logging'], 'server');
+  api.use(['service-configuration', 'logging'], 'server');
 
   api.use('oauth-encryption', 'server', {weak: true});
 
@@ -46,6 +50,5 @@ Package.onTest(function (api) {
 });
 
 Cordova.depends({
-  'org.apache.cordova.inappbrowser': '0.6.0'
+  'cordova-plugin-inappbrowser': '1.0.1'
 });
-

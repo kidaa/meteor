@@ -1,4 +1,279 @@
+## batch-plugins
+
+Backwards-incompatible change: static assets in package.js files must
+be explicitly declared with `{isAsset: true}`.  See the batch-plugins merge
+message for more details.
+
+
 ## v.NEXT
+
+* No longer include the `json` package by default, which contains code for
+  `JSON.parse` and `JSON.stringify`.  (The last browser to not support JSON
+  natively was Internet Explorer 7.)
+
+### Utilities
+
+* New `beforeSend` option to `HTTP.call` on the client allows you to directly
+  access the `XMLHttpRequest` object and abort the call.  #4419 #3243 #3266
+
+* Parse `application/javascript` and `application/x-javascript` HTTP replies as
+  JSON too.  #4595
+
+
+### Meteor Accounts
+
+* `loginWithPassword` now matches username or email in a case insensitive manner. If there are multiple users with a username or email only differing in case, a case sensitive match is required. #550
+
+* `loginWithGithub` now requests `user:email` scope by default, and attempts to fetch the user's emails. If no public email has been set, we use the primary email instead. We also store the complete list of emails. #4545
+
+* Fix `OAuth1Binding.prototype.call` when making requests to Twitter
+  with a large parameter set.
+
+
+### DDP
+
+* `sub.ready()` should return true inside that subscription's `onReady`
+  callback.  #4614
+
+### Livequery
+
+* Improved server performance by reducing overhead of processing oplog after
+  database writes. Improvements are most noticeable in case when a method is
+  doing a lot of writes on collections with plenty of active observers.  #4694
+
+### Mobile
+
+* The included Cordova tools have been updated to the latest version 5.2.0.
+  This includes Cordova Android 4.1 and Cordova iOS 3.9. These updates may
+  require you to make changes to your app. For details, see the [Cordova release
+  notes] (https://cordova.apache.org/#news) for for the different versions.
+
+* Thanks to Cordova Android's support for pluggable web views, it is now
+  possible to install the [Crosswalk plugin]
+  (https://crosswalk-project.org/documentation/cordova/cordova_4.html), which
+  offers a hugely improved web view on older Android versions.
+  You can add the plugin to your app with `meteor add crosswalk`.
+
+* The bundled Android tools have been removed and a system-wide install of the
+  Android SDK is now required. This should make it easier to keep the
+  development toolchain up to date and helps avoid some difficult to diagnose
+  failures. If you don't have your own Android tools installed already, you can
+  find more information about installing the Android SDK for [Mac] (https://github.com/meteor/meteor/wiki/Mobile-Dev-Install:-Android-on-Mac)
+  or [Linux]
+  (https://github.com/meteor/meteor/wiki/Mobile-Dev-Install:-Android-on-Linux).
+
+* As part of moving to npm, many Cordova plugins have been renamed. Meteor
+  should perform conversions automatically, but you may want to be aware of this
+  to avoid surprises. See [here]
+  (https://cordova.apache.org/announcements/2015/04/21/plugins-release-and-move-to-npm.html)
+  for more information.
+
+* Installing plugins from the local filesystem is now supported using `file://`
+  URLs, which should make developing your own plugins more convenient. It is
+  also needed as a temporary workaround for using the Facebook plugin.
+  Relative references are interpreted relative to the Meteor project directory.
+  (As an example,
+  `meteor add cordova:phonegap-facebook-plugin@file://../phonegap-facebook-plugin`
+  would attempt to install the plugin from the same directory you Meteor project
+  directory is located in.)
+
+* Meteor no longer supports installing Cordova plugins from tarball URLs, but
+  does support Git URLs with a SHA reference (like
+  `https://github.com/apache/cordova-plugin-file#c452f1a67f41cb1165c92555f0e721fbb07329cc`).
+  Existing GitHub tarball URLs are converted automatically.
+
+* Allow specifying a `buildNumber` in `App.info`, which is used to set the
+  `android-versionCode` and `ios-CFBundleVersion` in the `config.xml` of the
+  Cordova project. The build number is used to differentiate between
+  different versions of the app, and should be incremented before distributing
+  a built app to stores or testing services. #4048
+
+* Other changes include performance enhancements when building and running,
+  and improved requirements checking and error reporting.
+
+* Known issue: we do not currently show logging output when running on the
+  iOS Simulator. As a workaround, you can `meteor run ios-device` to open the
+  project in Xcode and watch the output there.
+
+## in progress: v.1.1.1
+
+### Blaze
+
+* Preparatory work for the yet-unreleased `react-template-helper`
+  package -- don't let templates use {{> React}} with siblings since
+  `React.render` assumes it's being rendered into an empty container
+  element. (This lets us throw the error when compiling templates
+  rather than when the app runs.)
+
+* Improve parsing of `<script>` and `<style>` tags.  #3797
+
+* Fix a bug in `observe-sequence`. The bug was causing unnecessary rerenderings
+  in an instance of `#each` block helper followed by false "duplicate ids"
+  warnings. #4049
+
+* `TemplateInstance#subscribe` now has a new `connection` option, which
+  specifies which connection should be used when making the subscription. The
+  default is `Meteor.connection`, which is the connection used when calling
+  `Meteor.subscribe`.
+
+* XXX Handlebars sub-expressions. https://github.com/meteor/meteor/pull/4101
+
+* XXX `#each .. in ..` and `#let x=y` forms. https://github.com/meteor/meteor/pull/3560
+
+* Fix external `<script>` tags in body or templates.  #4415
+
+* Fix memory leak.  #4289
+
+
+### DDP
+
+* Websockets now support the
+  [`permessage-deflate`](https://tools.ietf.org/id/draft-ietf-hybi-permessage-compression-19.txt)
+  extension, which compresses data on the wire. It is enabled by default on the
+  server. To disable it, set `$SERVER_WEBSOCKET_COMPRESSION` to `0`. To configure
+  compression options, set `$SERVER_WEBSOCKET_COMPRESSION` to a JSON object that
+  will be used as an argument to
+  [`deflate.configure`](https://github.com/faye/permessage-deflate-node/blob/master/README.md).
+  Compression is supported on the client side by Meteor's Node DDP client and by
+  browsers including Chrome, Safari, and Firefox 37.
+
+* The `ddp` package has been split into `ddp-client` and `ddp-server` packages;
+  using `ddp` is equivalent to using both. This allows you to use the Node DDP
+  client without adding the DDP server to your app.  #4191 #3452
+
+* On the client, `Meteor.call` now takes a `throwStubExceptions` option; if set,
+  exceptions thrown by method stubs will be thrown instead of logged, and the
+  method will not be invoked on the server.  #4202
+
+
+### Isobuild
+
+* Plugins should not process files whose names match the extension exactly (with
+  no extra dot).  #3985
+
+* Adding the same file twice in the same package is now an error. Previously,
+  this could either lead to the file being included multiple times, or to a
+  build time crash.
+
+* You may now specify the `bare` option for JavaScript files on the server.
+  Previous versions only allowed this on the client. #3681
+
+* Ignore `node_modules` directories in apps instead of processing them as Meteor
+  source code.  #4457 #4452
+
+### Livequery
+
+* The oplog observe driver now properly updates queries when you drop a
+  database.  #3847
+
+
+### `meteor` command-line tool
+
+* Avoid a race condition in `meteor --test` and work with newer versions of the
+  Velocity package.  #3957
+
+* Improve error handling when publishing packages.  #3977
+
+* Improve messaging around publishing binary packages.  #3961
+
+* Preserve the value of `_` in `meteor shell`.  #4010
+
+* `meteor mongo` now works on OS X when certain non-ASCII characters are in the
+  pathname, as long as the `pgrep` utility is installed (it ships standard with
+  OS X 10.8 and newer).  #3999
+
+* `meteor run` no longer ignores (and often reverts) external changes to
+  `.meteor/versions` which occur while the process is running.  #3582
+
+* Fix crash when downloading two builds of the same package version
+  simultaneously.  #4163
+
+* Improve messages printed by `meteor update`, displaying list of packages
+  that are not at the latest version available.
+
+* When determining file load order, split file paths on path separator
+  before comparing path components alphabetically.  #4300
+
+* Fix inability to run `mongod` due to lack of locale configuration on some
+  platforms, and improve error message if the failure still occurs.  #4019
+
+### Meteor Accounts
+
+* Add `Accounts.oauth.unregisterService` method, and ensure that users can only
+  log in with currently registered services.  #4014
+
+* The `accounts-base` now defines reusable `AccountsClient` and
+  `AccountsServer` constructors, so that users can create multiple
+  independent instances of the `Accounts` namespace.  #4233
+
+* Create an index for `Meteor.users` on
+  `services.email.verificationTokens.token` (instead of
+  `emails.validationTokens.token`, which never was used for anything).  #4482
+
+* Remove an IE7-specific workaround from accounts-ui.  #4485
+
+### Minimongo
+
+* The `$push` query modifier now supports a `$position` argument.  #4312
+
+* `c.update(selector, replacementDoc)` no longer shares mutable state between
+  replacementDoc and Minimongo internals. #4377
+
+### Email
+
+* `Email.send` now has a new option, `attachments`, in the same style as
+  `mailcomposer`.
+  [Details here.](https://github.com/andris9/mailcomposer#add-attachments)
+
+### Tracker
+
+* New `Tracker.Computation#onStop` method.  #3915
+
+* `ReactiveDict` now has two new methods, `clear` and `all`. `clear` resets
+  the dictionary as if no items had been added, meaning all calls to `get` will
+  return `underfined`. `all` converts the dictionary into a regular JavaScript
+  object with a snapshot of the keys and values. Inside an autorun, `all`
+  registers a dependency on any changes to the dictionary.
+
+### Utilities
+
+* `Match.test` from the `check` package now properly compares boolean literals,
+  just like it does with Numbers and Strings. This applies to the `check`
+  function as well.
+
+* Provide direct access to the `mailcomposer` npm module used by the `email`
+  package on `EmailInternals.NpmModules`. Allow specifying a `MailComposer`
+  object to `Email.send` instead of individual options.  #4209
+
+* Expose `Spiderable.requestTimeoutMs` from `spiderable` package to
+  allow apps to set the timeout for running phantomjs.
+
+### Other bug fixes and improvements
+
+* The `spiderable` package now reports the URL it's trying to fetch on failure.
+
+* Upgraded dependencies:
+
+  - Node: 0.10.40 (from 0.10.36)
+  - uglify-js: 2.4.20 (from 2.4.17)
+  - http-proxy: 1.11.1 (from 1.6.0)
+
+* `Meteor.loginWithGoogle` now supports `prompt`. Choose a prompt to always be
+  displayed on Google login.
+
+* Upgraded `coffeescript` package to depend on NPM packages
+  coffeescript@1.9.2 and source-map@0.4.2.
+
+* Upgraded `fastclick` to 1.0.6 to fix an issue in iOS Safari. #4393
+
+
+## v1.1.0.3, 2015-Aug-03
+
+### Accounts
+
+* When using Facebook API version 2.4, properly fetch `email` and other fields.
+  Facebook recently forced all new apps to use version 2.4 of their API.  #4743
+
 
 ## v1.1.0.2, 2015-Apr-06
 
@@ -6,6 +281,7 @@
 
 * Revert a change in 1.1.0.1 that caused `meteor mongo` to fail on some Linux
   systems. #4115, #4124, #4134
+
 
 ## v1.1.0.1, 2015-Apr-02
 
