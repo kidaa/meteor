@@ -1,4 +1,4 @@
-const path = Npm.require('path');
+const path = Plugin.path;
 const less = Npm.require('less');
 const Future = Npm.require('fibers/future');
 
@@ -47,17 +47,17 @@ class LessCompiler extends MultiFileCachingCompiler {
     const importPlugin = new MeteorImportLessPlugin(allFiles);
 
     const f = new Future;
-    less.render(inputFile.getContentsAsBuffer().toString('utf8'), {
-      filename: this.getAbsoluteImportPath(inputFile),
-      plugins: [importPlugin],
-      // Generate a source map, and include the source files in the
-      // sourcesContent field.  (Note that source files which don't
-      // themselves produce text (eg, are entirely variable definitions)
-      // won't end up in the source map!)
-      sourceMap: { outputSourceFiles: true }
-    }, f.resolver());
     let output;
     try {
+      less.render(inputFile.getContentsAsBuffer().toString('utf8'), {
+        filename: this.getAbsoluteImportPath(inputFile),
+        plugins: [importPlugin],
+        // Generate a source map, and include the source files in the
+        // sourcesContent field.  (Note that source files which don't themselves
+        // produce text (eg, are entirely variable definitions) won't end up in
+        // the source map!)
+        sourceMap: { outputSourceFiles: true }
+      }, f.resolver());
       output = f.wait();
     } catch (e) {
       inputFile.error({
@@ -124,7 +124,8 @@ class MeteorImportLessFileManager extends less.AbstractFileManager {
     if (! packageMatch) {
       // shouldn't happen.  all filenames less ever sees should involve this {}
       // thing!
-      throw new Error('file without Meteor context? ' + currentDirectory);
+      cb(new Error('file without Meteor context? ' + currentDirectory));
+      return;
     }
     const currentPackagePrefix = packageMatch[1];
 
@@ -136,11 +137,6 @@ class MeteorImportLessFileManager extends less.AbstractFileManager {
       resolvedFilename = filename;
     } else {
       resolvedFilename = path.join(currentDirectory, filename);
-    }
-
-    if (process.platform === 'win32') {
-      // convert the path back to standard path (backslashes to forward slashes)
-      resolvedFilename = resolvedFilename.replace(/\\/g, '/');
     }
 
     if (!this.allFiles.has(resolvedFilename)) {

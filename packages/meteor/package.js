@@ -2,7 +2,7 @@
 
 Package.describe({
   summary: "Core Meteor environment",
-  version: '1.1.7-plugins.0'
+  version: '1.1.7-plugins.1'
 });
 
 Package.registerBuildPlugin({
@@ -15,6 +15,11 @@ Npm.depends({
 });
 
 Package.onUse(function (api) {
+  // If the es5-shim package is installed, make sure it is evaluated
+  // before all other packages. Note that es5-shim registers an unordered
+  // dependency on the meteor package.
+  api.use('es5-shim', { weak: true });
+
   api.use('underscore', ['client', 'server']);
 
   api.use('isobuild:compiler-plugin@1.0.0');

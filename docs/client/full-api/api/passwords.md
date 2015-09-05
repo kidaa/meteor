@@ -12,8 +12,13 @@ The Meteor server stores passwords using the
 protect against embarrassing password leaks if the server's database is
 compromised.
 
-To add password support to your application, run `$ meteor add
-accounts-password`. You can construct your own user interface using the
+To add password support to your application, run this command in your terminal:
+
+```bash
+meteor add accounts-password
+```
+
+You can construct your own user interface using the
 functions below, or use the [`accounts-ui` package](#accountsui) to
 include a turn-key user interface for password-based sign-in.
 
@@ -60,7 +65,7 @@ new password and call `resetPassword`.
 {{> autoApiBox "Accounts.resetPassword"}}
 
 This function accepts tokens passed into the callbacks registered with
-[`Accounts.onResetPasswordLink`](#Accounts-onResetPasswordLink) and
+[`AccountsClient#onResetPasswordLink`](#Accounts-onResetPasswordLink) and
 [`Accounts.onEnrollmentLink`](#Accounts-onEnrollmentLink).
 
 {{> autoApiBox "Accounts.setPassword"}}
@@ -73,7 +78,7 @@ This function accepts tokens passed into the callback registered with
 {{> autoApiBox "Accounts.sendResetPasswordEmail"}}
 
 When the user visits the link in this email, the callback registered with
-[`Accounts.onResetPasswordLink`](#Accounts-onResetPasswordLink) will be called.
+[`AccountsClient#onResetPasswordLink`](#Accounts-onResetPasswordLink) will be called.
 
 To customize the contents of the email, see
 [`Accounts.emailTemplates`](#accounts_emailtemplates).

@@ -1,18 +1,18 @@
 var compiler = require('./compiler.js');
-var archinfo = require('../archinfo.js');
+var archinfo = require('../utils/archinfo.js');
 var _ = require('underscore');
 var linker = require('./linker.js');
-var buildmessage = require('../buildmessage.js');
+var buildmessage = require('../utils/buildmessage.js');
 var Builder = require('./builder.js');
 var bundler = require('./bundler.js');
-var watch = require('../watch.js');
-var files = require('../files.js');
-var isopackets = require("../isopackets.js");
-var colonConverter = require('../colon-converter.js');
-var linterPluginModule = require('./linter-plugin.js');
+var watch = require('../fs/watch.js');
+var files = require('../fs/files.js');
+var isopackets = require('../tool-env/isopackets.js');
+var colonConverter = require('../utils/colon-converter.js');
+var utils = require('../utils/utils.js');
 var buildPluginModule = require('./build-plugin.js');
-var Console = require('../console.js').Console;
-var Profile = require('../profile.js').Profile;
+var Console = require('../console/console.js').Console;
+var Profile = require('../tool-env/profile.js').Profile;
 
 var rejectBadPath = function (p) {
   if (p.match(/\.\./))
@@ -124,6 +124,7 @@ var Isopack = function () {
   self.version = null;
   self.isTest = false;
   self.debugOnly = false;
+  self.prodOnly = false;
 
   // Unibuilds, an array of class Unibuild.
   self.unibuilds = [];
@@ -331,6 +332,7 @@ _.extend(Isopack.prototype, {
     self.npmDiscards = options.npmDiscards;
     self.includeTool = options.includeTool;
     self.debugOnly = options.debugOnly;
+    self.prodOnly = options.prodOnly;
     self.pluginCacheDir = options.pluginCacheDir || null;
     self.isobuildFeatures = options.isobuildFeatures;
   },
@@ -721,7 +723,7 @@ _.extend(Isopack.prototype, {
       // Unlike compilers and minifiers, linters run on one package
       // at a time.  Linters are run by `meteor run`, `meteor publish`,
       // and `meteor lint`.
-      
+
       /**
        * @summary Inside a build plugin source file specified in
        * [Package.registerBuildPlugin](#Package-registerBuildPlugin),
@@ -814,7 +816,21 @@ _.extend(Isopack.prototype, {
 
       nudge: function () {
         Console.nudge(true);
-      }
+      },
+
+      convertToOSPath: files.convertToOSPath,
+      convertToStandardPath: files.convertToStandardPath,
+      path: {
+        join: files.pathJoin,
+        normalize: files.pathNormalize,
+        relative: files.pathRelative,
+        resolve: files.pathResolve,
+        dirname: files.pathDirname,
+        basename: files.pathBasename,
+        extname: files.pathExtname,
+        sep: files.pathSep
+      },
+      fs: files.fsFixPath
     };
     return Plugin;
   },
@@ -896,6 +912,7 @@ _.extend(Isopack.prototype, {
       self.version = mainJson.version;
       self.isTest = mainJson.isTest;
       self.debugOnly = !!mainJson.debugOnly;
+      self.prodOnly = !!mainJson.prodOnly;
     }
     _.each(mainJson.plugins, function (pluginMeta) {
       rejectBadPath(pluginMeta.path);
@@ -977,6 +994,10 @@ _.extend(Isopack.prototype, {
             // It's a shame to have to calculate the hash here instead of having
             // it on disk, but this only runs for legacy packages anyway.
             hash: watch.sha1(data),
+            // Legacy prelink files definitely don't have a source processor!
+            // They were created by an Isobuild that didn't even know about
+            // source processors!
+            usesDefaultSourceProcessor: true,
             legacyPrelink: {
               packageVariables: unibuildJson.packageVariables || []
             }
@@ -1133,6 +1154,9 @@ _.extend(Isopack.prototype, {
 
       if (self.debugOnly) {
         mainJson.debugOnly = true;
+      }
+      if (self.prodOnly) {
+        mainJson.prodOnly = true;
       }
       if (! _.isEmpty(self.cordovaDependencies)) {
         mainJson.cordovaDependencies = self.cordovaDependencies;
@@ -1549,9 +1573,9 @@ _.extend(Isopack.prototype, {
   _writeTool: Profile("Isopack#_writeTool", function (builder) {
     var self = this;
 
-    var pathsToCopy = files.runGitInCheckout(
+    var pathsToCopy = utils.runGitInCheckout(
       'ls-tree',
-      '-r',  // recursive
+      '-r',
       '--name-only',
       '--full-tree',
       'HEAD',
@@ -1571,6 +1595,16 @@ _.extend(Isopack.prototype, {
     var transpileRegexes = [
       /^tools\/[^\/]+\.js$/, // General tools files
       /^tools\/isobuild\/[^\/]+\.js$/, // Isobuild files
+      /^tools\/cli\/[^\/]+\.js$/, // CLI files
+      /^tools\/tool-env\/[^\/]+\.js$/, // Tool initiation and clean up
+      /^tools\/runners\/[^\/]+\.js$/, // Parts of tool process
+      /^tools\/packaging\/[^\/]+\.js$/,
+      /^tools\/packaging\/catalog\/[^\/]+\.js$/,
+      /^tools\/utils\/[^\/]+\.js$/,
+      /^tools\/fs\/[^\/]+\.js$/,
+      /^tools\/meteor-services\/[^\/]+\.js$/,
+      /^tools\/tool-testing\/[^\/]+\.js$/,
+      /^tools\/console\/[^\/]+\.js$/,
       // We don't support running self-test from an install anymore
     ];
 
@@ -1605,13 +1639,13 @@ _.extend(Isopack.prototype, {
       // We don't actually want to load the babel auto-transpiler when we are
       // in a Meteor installation where everything is already transpiled for us.
       // Therefore, strip out that line in main.js
-      if (path === "tools/install-babel.js" ||
-          path === "tools/source-map-retriever-stack.js") {
+      if (path === "tools/tool-env/install-babel.js" ||
+          path === "tools/tool-env/source-map-retriever-stack.js") {
         inputFileContents = inputFileContents.replace(/^.*#RemoveInProd.*$/mg, "");
       }
 
       var babelOptions = babel.getDefaultOptions(
-        require("../babel-features.js")
+        require('../tool-env/babel-features.js')
       );
 
       _.extend(babelOptions, {
@@ -1634,7 +1668,7 @@ _.extend(Isopack.prototype, {
       });
     });
 
-    var gitSha = files.runGitInCheckout('rev-parse', 'HEAD');
+    var gitSha = utils.runGitInCheckout('rev-parse', 'HEAD');
     builder.reserve('isopackets', {directory: true});
     builder.write('.git_version.txt', {data: new Buffer(gitSha, 'utf8')});
 

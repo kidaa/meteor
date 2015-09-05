@@ -1,8 +1,8 @@
-var archinfo = require('../archinfo.js');
-var buildmessage = require('../buildmessage.js');
-var files = require('../files.js');
+var archinfo = require('../utils/archinfo.js');
+var buildmessage = require('../utils/buildmessage.js');
+var files = require('../fs/files.js');
 var _ = require('underscore');
-import utils from '../utils.js';
+import utils from '../utils/utils.js';
 
 let nextId = 1;
 
@@ -41,9 +41,11 @@ _.extend(exports.SourceProcessor.prototype, {
           // If we have a disk cache directory and the plugin wants it, use it.
           if (self.isopack.pluginCacheDir &&
               self.userPlugin.setDiskCacheDirectory) {
-            const markedMethod = buildmessage.markBoundary(
-              self.userPlugin.setDiskCacheDirectory.bind(self.userPlugin));
-            markedMethod(self.isopack.pluginCacheDir);
+            buildmessage.markBoundary(function () {
+              self.userPlugin.setDiskCacheDirectory(
+                files.convertToOSPath(self.isopack.pluginCacheDir)
+              );
+            })();
           }
         } catch (e) {
           buildmessage.exception(e);

@@ -18,7 +18,16 @@ BCp.processFilesForTarget = function (inputFiles) {
     };
 
     if (fileOptions.transpile !== false) {
-      var babelOptions = Babel.getDefaultOptions();
+      var targetCouldBeInternetExplorer8 =
+        inputFile.getArch() === "web.browser";
+
+      var babelOptions = Babel.getDefaultOptions({
+        // Perform some additional transformations to improve
+        // compatibility in older browsers (e.g. wrapping named function
+        // expressions, per http://kiro.me/blog/nfe_dilemma.html).
+        jscript: targetCouldBeInternetExplorer8
+      });
+
       babelOptions.sourceMap = true;
       babelOptions.filename = inputFilePath;
       babelOptions.sourceFileName = "/" + inputFilePath;

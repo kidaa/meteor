@@ -1,13 +1,13 @@
-require('../../install-babel.js');
+require('../../tool-env/install-babel.js');
 
 var _ = require('underscore');
 var assert = require('assert');
 var bundler = require('../../isobuild/bundler.js');
-var release = require('../../release.js');
-var files = require('../../files.js');
-var catalog = require('../../catalog.js');
-var buildmessage = require('../../buildmessage.js');
-var isopackets = require("../../isopackets.js");
+var release = require('../../packaging/release.js');
+var files = require('../../fs/files.js');
+var catalog = require('../../packaging/catalog/catalog.js');
+var buildmessage = require('../../utils/buildmessage.js');
+var isopackets = require('../../tool-env/isopackets.js');
 var projectContextModule = require('../../project-context.js');
 
 

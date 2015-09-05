@@ -1,8 +1,8 @@
 const stylus = Npm.require('stylus');
 const nib = Npm.require('nib');
 const Future = Npm.require('fibers/future');
-const fs = Npm.require('fs');
-const path = Npm.require('path');
+const fs = Plugin.fs;
+const path = Plugin.path;
 
 Plugin.registerCompiler({
   extensions: ['styl'],
@@ -45,7 +45,7 @@ class StylusCompiler extends MultiFileCachingCompiler {
   compileOneFile(inputFile, allFiles) {
     const referencedImportPaths = [];
 
-    function parseImportPath(filePath, importerPath) {
+    function parseImportPath(filePath, importerDir) {
       if (! filePath) {
         throw new Error('filePath is undefined');
       }
@@ -56,16 +56,22 @@ class StylusCompiler extends MultiFileCachingCompiler {
         };
       }
       if (! filePath.match(/^\{.*\}\//)) {
-        if (! importerPath) {
+        if (! importerDir) {
           return { packageName: inputFile.getPackageName() || '',
                    pathInPackage: filePath };
         }
 
         // relative path in the same package
-        const parsedImporter = parseImportPath(importerPath, null);
+        const parsedImporter = parseImportPath(importerDir, null);
+
+        // resolve path if it is absolute or relative
+        const importPath =
+          (filePath[0] === '/') ? filePath :
+            path.join(parsedImporter.pathInPackage, filePath);
+
         return {
           packageName: parsedImporter.packageName,
-          pathInPackage: path.resolve(parsedImporter.pathInPackage, filePath)
+          pathInPackage: importPath
         };
       }
 
@@ -80,16 +86,15 @@ class StylusCompiler extends MultiFileCachingCompiler {
     }
 
     const importer = {
-      find(importPath, paths, importerPath) {
-        const parsed = parseImportPath(importPath, importerPath);
+      find(importPath, paths) {
+        const parsed = parseImportPath(importPath, paths[paths.length - 1]);
         if (! parsed) { return null; }
 
         if (importPath[0] !== '{') {
           // if it is not a custom syntax path, it could be a lookup in a folder
           for (let i = paths.length - 1; i >= 0; i--) {
-            const joined = path.join(paths[i], importPath)
-              .replace(/\\/g, '/'); // XXX turn Windows paths back into standard path
-            if (fs.existsSync(joined))
+            const joined = path.join(paths[i], importPath);
+            if (fs.exists(joined))
               return [joined];
           }
         }
@@ -103,14 +108,11 @@ class StylusCompiler extends MultiFileCachingCompiler {
         return [absolutePath];
       },
       readFile(filePath) {
-        const isAbsolute = (process.platform === 'win32') ?
-                filePath[0].match(/^[A-Za-z]:\\/) : filePath[0] === '/';
-        const normalizedPath = (process.platform === 'win32') ?
-                filePath.replace(/\\/g, '/') : filePath;
+        const isAbsolute = filePath[0] === '/';
         const isNib =
-                normalizedPath.indexOf('/node_modules/nib/lib/nib/') !== -1;
+                filePath.indexOf('/node_modules/nib/lib/nib/') !== -1;
         const isStylusBuiltIn =
-                normalizedPath.indexOf('/node_modules/stylus/lib/') !== -1;
+                filePath.indexOf('/node_modules/stylus/lib/') !== -1;
 
         if (isAbsolute || isNib || isStylusBuiltIn) {
           // absolute path? let the default implementation handle this

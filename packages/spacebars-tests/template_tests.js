@@ -3248,7 +3248,7 @@ Tinytest.add("spacebars-tests - template_tests - new #each binding lookup is sco
 Tinytest.add("spacebars-tests - template_tests - let bindings", function (test) {
   var tmpl = Template.spacebars_template_test_let_bindings;
 
-  v = new ReactiveVar("var");
+  var v = new ReactiveVar("var");
   tmpl.helpers({
     dataContext: function () {
       return {
@@ -3416,4 +3416,16 @@ Tinytest.add("spacebars-tests - template_tests - #each takes multiple arguments"
 
   var div = renderToDiv(tmpl);
   test.equal(canonicalizeHtml(div.innerHTML), "<div>a</div><div>b</div><div>c</div>");
+});
+
+Tinytest.add("spacebars-tests - template_tests - lexical scope doesn't leak", function (test) {
+  // make sure '@index' doesn't leak into subtemplates
+  var tmpl = Template.spacebars_template_test_lexical_leakage;
+  tmpl.helpers({
+    list: ['a', 'b', 'c']
+  });
+
+  test.throws(function () {
+    var div = renderToDiv(tmpl);
+  }, /Unsupported directive/);
 });

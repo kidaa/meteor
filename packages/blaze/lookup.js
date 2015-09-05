@@ -81,14 +81,8 @@ Blaze._lexicalBindingLookup = function (view, name) {
   var currentView = view;
   var blockHelpersStack = [];
 
-  var boundaryTemplateView = null;
-
-  Tracker.nonreactive(function () {
-    if (view.templateInstance)
-      boundaryTemplateView = view.templateInstance().view;
-  });
-
-  // walk up the views up to the templateInstance view, inclusive
+  // walk up the views stopping at a Spacebars.include or Template view that
+  // doesn't have an InOuterTemplateScope view as a parent
   do {
     // skip block helpers views
     // if we found the binding on the scope, return it
@@ -98,7 +92,9 @@ Blaze._lexicalBindingLookup = function (view, name) {
         return bindingReactiveVar.get();
       };
     }
-  } while (currentView !== boundaryTemplateView
+  } while (! (currentView.__startsNewLexicalScope &&
+              ! (currentView.parentView &&
+                 currentView.parentView.__childDoesntStartNewLexicalScope))
            && (currentView = currentView.parentView));
 
   return null;

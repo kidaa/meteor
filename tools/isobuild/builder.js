@@ -1,9 +1,16 @@
-import {WatchSet, readAndWatchFile, sha1} from '../watch.js';
-import files from '../files.js';
+import {WatchSet, readAndWatchFile, sha1} from '../fs/watch.js';
+import files from '../fs/files.js';
 import NpmDiscards from './npm-discards.js';
-import {Profile} from '../profile.js';
+import {Profile} from '../tool-env/profile.js';
 
+// Builder has two modes of working:
+// - write files to a temp directory and later atomically move it to destination
+// - write files in-place replacing the older files
+// The later doesn't work on Windows but works well on Mac OS X and Linux, since
+// the file system allows writing new files to the path of a file opened by a
+// process. The process only retains the inode, not the path.
 const ENABLE_IN_PLACE_BUILDER_REPLACEMENT =
+  (process.platform !== 'win32') &&
   ! process.env.METEOR_DISABLE_BUILDER_IN_PLACE;
 
 
@@ -587,10 +594,9 @@ function atomicallyRewriteFile(path, data, options) {
     }
   }
 
-  if (! stat) {
-    files.writeFile(path, data, options);
-  } else if (stat.isDirectory()) {
+  if (stat && stat.isDirectory()) {
     files.rm_recursive(path);
+    files.writeFile(path, data, options);
   } else {
     // create a different file with a random name and then rename over atomically
     const rname = '.builder-tmp-file.' + Math.floor(Math.random() * 999999);

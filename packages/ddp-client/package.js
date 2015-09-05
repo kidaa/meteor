@@ -10,8 +10,8 @@ Npm.depends({
 });
 
 Package.onUse(function (api) {
-  api.use(['check', 'random', 'ejson', 'json', 'underscore', 'tracker',
-           'logging', 'retry', 'id-map'],
+  api.use(['check', 'random', 'ejson', 'underscore', 'tracker',
+           'retry', 'id-map'],
           ['client', 'server']);
 
   // common functionality
@@ -47,7 +47,16 @@ Package.onTest(function (api) {
   api.use('livedata', ['client', 'server']);
   api.use('mongo', ['client', 'server']);
   api.use('test-helpers', ['client', 'server']);
-  api.use(['underscore', 'tinytest', 'random', 'tracker', 'reactive-var', 'mongo-id', 'diff-sequence']);
+  api.use([
+    'underscore',
+    'tinytest',
+    'random',
+    'tracker',
+    'reactive-var',
+    'mongo-id',
+    'diff-sequence',
+    'ejson'
+  ]);
 
   api.addFiles('stub_stream.js');
   api.addFiles('livedata_connection_tests.js', ['client', 'server']);

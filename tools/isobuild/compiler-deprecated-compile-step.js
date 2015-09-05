@@ -7,11 +7,11 @@
 
 var _ = require('underscore');
 
-var archinfo = require('../archinfo.js');
-var buildmessage = require('../buildmessage.js');
-var files = require('../files.js');
-var colonConverter = require('../colon-converter.js');
-var watch = require('../watch.js');
+var archinfo = require('../utils/archinfo.js');
+var buildmessage = require('../utils/buildmessage.js');
+var files = require('../fs/files.js');
+var colonConverter = require('../utils/colon-converter.js');
+var watch = require('../fs/watch.js');
 
 var convertSourceMapPaths = function (sourcemap, f) {
   if (! sourcemap) {

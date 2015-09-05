@@ -1,11 +1,11 @@
 var assert = require("assert");
 var _ = require("underscore");
-var buildmessage = require('../buildmessage.js');
-var utils = require('../utils.js');
+var buildmessage = require('../utils/buildmessage.js');
+var utils = require('../utils/utils.js');
 var compiler = require('./compiler.js');
-var archinfo = require('../archinfo.js');
-var files = require('../files.js');
-var catalog = require('../catalog.js');
+var archinfo = require('../utils/archinfo.js');
+var files = require('../fs/files.js');
+var catalog = require('../packaging/catalog/catalog.js');
 
 function toArray (x) {
   if (_.isArray(x))
@@ -436,7 +436,11 @@ _.extend(PackageAPI.prototype, {
    * @instance
    * @summary Export package-level variables in your package. The specified
    * variables (declared without `var` in the source code) will be available
-   * to packages that use this package.
+   * to packages that use your package. If your package sets the `debugOnly`
+   * or `prodOnly` options to `true` when it calls `Package.describe()`, then
+   * packages that use your package will need to use 
+   * `Package["package-name"].ExportedVariableName` to access the value of an
+   * exported variable.
    * @locus package.js
    * @param {String|String[]} exportedObjects Name of the object to export, or
    * an array of object names.

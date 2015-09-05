@@ -1,20 +1,20 @@
 var assert = require("assert");
 var _ = require('underscore');
 
-var archinfo = require('./archinfo.js');
-var buildmessage = require('./buildmessage.js');
-var catalog = require('./catalog.js');
-var catalogLocal = require('./catalog-local.js');
-var Console = require('./console.js').Console;
-var files = require('./files.js');
+var archinfo = require('./utils/archinfo.js');
+var buildmessage = require('./utils/buildmessage.js');
+var catalog = require('./packaging/catalog/catalog.js');
+var catalogLocal = require('./packaging/catalog/catalog-local.js');
+var Console = require('./console/console.js').Console;
+var files = require('./fs/files.js');
 var isopackCacheModule = require('./isobuild/isopack-cache.js');
-var isopackets = require('./isopackets.js');
-var packageMapModule = require('./package-map.js');
-var release = require('./release.js');
-var tropohouse = require('./tropohouse.js');
-var utils = require('./utils.js');
-var watch = require('./watch.js');
-var Profile = require('./profile.js').Profile;
+var isopackets = require('./tool-env/isopackets.js');
+var packageMapModule = require('./packaging/package-map.js');
+var release = require('./packaging/release.js');
+var tropohouse = require('./packaging/tropohouse.js');
+var utils = require('./utils/utils.js');
+var watch = require('./fs/watch.js');
+var Profile = require('./tool-env/profile.js').Profile;
 
 // The ProjectContext represents all the context associated with an app:
 // metadata files in the `.meteor` directory, the choice of package versions
@@ -901,6 +901,10 @@ _.extend(exports.ProjectConstraintsFile.prototype, {
   addConstraints: function (constraintsToAdd) {
     var self = this;
     _.each(constraintsToAdd, function (constraintToAdd) {
+      if (! constraintToAdd.package) {
+        throw new Error("Expected PackageConstraint: " + constraintToAdd);
+      }
+
       var lineRecord;
       if (! _.has(self._constraintMap, constraintToAdd.package)) {
         lineRecord = {
@@ -919,6 +923,17 @@ _.extend(exports.ProjectConstraintsFile.prototype, {
       lineRecord.constraint = constraintToAdd;
       self._modified = true;
     });
+  },
+
+  // Like addConstraints, but takes an array of package name strings
+  // to add with no version constraint
+  addPackages: function (packagesToAdd) {
+    this.addConstraints(_.map(packagesToAdd, function (packageName) {
+      // make sure packageName is valid (and doesn't, for example,
+      // contain an '@' sign)
+      utils.validatePackageName(packageName);
+      return utils.parsePackageConstraint(packageName);
+    }));
   },
 
   // The packages in packagesToRemove are expected to actually be in the file;
@@ -1264,9 +1279,11 @@ _.extend(exports.ReleaseFile.prototype, {
     }
 
     self.unnormalizedReleaseName = lines[0];
-    var parts = utils.splitReleaseName(self.unnormalizedReleaseName);
+
+    const catalogUtils = require('./packaging/catalog/catalog-utils.js');
+    var parts = catalogUtils.splitReleaseName(self.unnormalizedReleaseName);
     self.fullReleaseName = parts[0] + '@' + parts[1];
-    self.displayReleaseName = utils.displayRelease(parts[0], parts[1]);
+    self.displayReleaseName = catalogUtils.displayRelease(parts[0], parts[1]);
     self.releaseTrack = parts[0];
     self.releaseVersion = parts[1];
   },

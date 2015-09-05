@@ -1,6 +1,6 @@
 Package.describe({
   summary: "Allows templates to be defined in .html files",
-  version: '1.1.2-plugins.0'
+  version: '1.1.2-plugins.1'
 });
 
 // Today, this package is closely intertwined with Handlebars, meaning
@@ -17,13 +17,11 @@ Package.registerBuildPlugin({
   // XXX maybe uglify should be applied by this plugin instead of via magic
   // weak dependency.
   use: [
-    'minifiers',
-    'spacebars-compiler',
-    'caching-compiler',
-    'ecmascript'
+    'caching-html-compiler',
+    'ecmascript',
+    'templating-tools'
   ],
   sources: [
-    'plugin/html_scanner.js',
     'plugin/compile-templates.js'
   ]
 });
@@ -43,22 +41,8 @@ Package.onUse(function (api) {
   // html_scanner.js emits client code that calls Meteor.startup and
   // Blaze, so anybody using templating (eg apps) need to implicitly use
   // 'meteor' and 'blaze'.
-  api.use('blaze');
-  api.imply(['meteor', 'blaze'], 'client');
-});
+  api.use(['blaze', 'spacebars']);
+  api.imply(['meteor', 'blaze', 'spacebars'], 'client');
 
-Package.onTest(function (api) {
-  api.use('tinytest');
-  api.use('htmljs');
-  api.use('templating');
-  api.use('underscore');
-  api.use(['test-helpers', 'session', 'tracker',
-           'minimongo'], 'client');
-  api.use('spacebars-compiler');
-  api.use('minifiers'); // ensure compiler output is beautified
-
-  api.addFiles([
-    'plugin/html_scanner.js',
-    'scanner_tests.js'
-  ], 'server');
+  api.addFiles(['dynamic.html', 'dynamic.js'], 'client');
 });

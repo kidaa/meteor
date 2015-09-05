@@ -1,11 +1,11 @@
-var selftest = require('../selftest.js');
+var selftest = require('../tool-testing/selftest.js');
 var Sandbox = selftest.Sandbox;
-var utils = require('../utils.js');
+var utils = require('../utils/utils.js');
 var net = require('net');
 var Future = require('fibers/future');
 var _ = require('underscore');
-var files = require('../files.js');
-var catalog = require('../catalog.js');
+var files = require('../fs/files.js');
+var catalog = require('../packaging/catalog/catalog.js');
 
 var DEFAULT_RELEASE_TRACK = catalog.DEFAULT_TRACK;
 

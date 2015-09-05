@@ -1,5 +1,5 @@
-var fs = Npm.require('fs');
-var path = Npm.require('path');
+var fs = Plugin.fs;
+var path = Plugin.path;
 
 Plugin.registerCompiler({
   extensions: ['printme'],
